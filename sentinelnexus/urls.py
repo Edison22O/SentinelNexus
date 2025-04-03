@@ -15,6 +15,8 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
+from . import views
+from submodulos import monitoreo_views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -29,4 +31,14 @@ urlpatterns = [
     path('api/nodes/', views.api_get_nodes, name='api_nodes'),
     path('api/vms/', views.api_get_vms, name='api_vms'),
     path('api/vms/<str:node_name>/<int:vmid>/status/', views.api_vm_status, name='api_vm_status'),
+
+    # Rutas de monitoreo
+    path('monitoreo/', monitoreo_views.panel_monitoreo, name='panel_monitoreo'),
+    path('monitoreo/iniciar/', monitoreo_views.iniciar_servicios, name='iniciar_servicios'),
+    path('monitoreo/detener/', monitoreo_views.detener_servicios, name='detener_servicios'),
+    path('monitoreo/reiniciar/', monitoreo_views.reiniciar_servicios, name='reiniciar_servicios'),
+    path('monitoreo/estado/', monitoreo_views.estado_servicios, name='estado_servicios'),
+    path('monitoreo/grafana/', monitoreo_views.iframe_grafana, name='iframe_grafana'),
+    path('monitoreo/grafana/<str:dashboard>/', monitoreo_views.iframe_grafana, name='iframe_grafana'),
+    path('monitoreo/prometheus/', monitoreo_views.iframe_prometheus, name='iframe_prometheus'),
 ]

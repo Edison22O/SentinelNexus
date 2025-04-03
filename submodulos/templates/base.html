@@ -13,21 +13,56 @@
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container-fluid">
-            <a class="navbar-brand" href="{% url 'server_list' %}">SentinelNexus</a>
+            <a class="navbar-brand" href="{% url 'dashboard' %}">SentinelNexus</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav">
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'server_list' %}">Servidores</a>
+                        <a class="nav-link {% if request.path == '/dashboard/' %}active{% endif %}" href="{% url 'dashboard' %}">
+                            <i class="fas fa-tachometer-alt me-1"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if '/monitoreo/' in request.path %}active{% endif %}" href="{% url 'panel_monitoreo' %}">
+                            <i class="fas fa-chart-line me-1"></i> Monitoreo
+                        </a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMonitoring" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-desktop me-1"></i> Paneles
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <a class="dropdown-item" href="{% url 'iframe_grafana' %}">
+                                    <i class="fas fa-chart-pie me-1"></i> Grafana
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'iframe_prometheus' %}">
+                                    <i class="fas fa-chart-bar me-1"></i> Prometheus
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'iframe_grafana' 'proxmox-summary' %}">
+                                    <i class="fas fa-server me-1"></i> Resumen de Proxmox
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'iframe_grafana' 'proxmox-vms' %}">
+                                    <i class="fas fa-laptop me-1"></i> Detalles de VMs
+                                </a>
+                            </li>
+                        </ul>
                     </li>
                 </ul>
                 {% if user.is_authenticated %}
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
-                            {{ user.username }}
+                            <i class="fas fa-user me-1"></i> {{ user.username }}
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
                             <li><a class="dropdown-item" href="{% url 'admin:index' %}">Admin</a></li>

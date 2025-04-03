@@ -342,3 +342,5 @@ class MaquinaVirtual(models.Model):
 
     def __str__(self):
         return f"{self.nombre} (ID: {self.vmid})"
+    
+    
