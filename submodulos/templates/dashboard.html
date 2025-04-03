@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - SentinelNexus{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Dashboard de Proxmox</h1>
+    
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Resumen</h5>
+                    <p>Nodos: {{ nodes|length }}</p>
+                    <p>Máquinas Virtuales: {{ total_vms }}</p>
+                    <p>VMs en ejecución: {{ running_vms }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2>Nodos</h2>
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Estado</th>
+                            <th>CPU</th>
+                            <th>Memoria</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for node in nodes %}
+                        <tr>
+                            <td>{{ node.node }}</td>
+                            <td>
+                                {% if node.status == 'online' %}
+                                <span class="badge bg-success">Online</span>
+                                {% else %}
+                                <span class="badge bg-danger">Offline</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ node.cpu|floatformat:2 }}%</td>
+                            <td>{{ node.mem|floatformat:2 }}%</td>
+                            <td>
+                                <a href="{% url 'node_detail' node_name=node.node %}" class="btn btn-sm btn-primary">
+                                    Ver detalles
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center">No hay nodos disponibles</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-12">
+            <h2>Máquinas Virtuales</h2>
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nombre</th>
+                            <th>Nodo</th>
+                            <th>Tipo</th>
+                            <th>Estado</th>
+                            <th>CPU</th>
+                            <th>Memoria</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for vm in vms %}
+                        <tr>
+                            <td>{{ vm.vmid }}</td>
+                            <td>{{ vm.name }}</td>
+                            <td>{{ vm.node }}</td>
+                            <td>
+                                {% if vm.type == 'qemu' %}
+                                <span class="badge bg-info">KVM</span>
+                                {% else %}
+                                <span class="badge bg-secondary">LXC</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if vm.status == 'running' %}
+                                <span class="badge bg-success">Running</span>
+                                {% else %}
+                                <span class="badge bg-danger">Stopped</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ vm.cpu|default:"0"|floatformat:2 }}%</td>
+                            <td>{{ vm.mem|default:"0"|floatformat:2 }}%</td>
+                            <td>
+                                <a href="{% url 'vm_detail_with_type' node_name=vm.node vmid=vm.vmid vm_type=vm.type %}" class="btn btn-sm btn-primary">
+                                    Ver
+                                </a>
+                                
+                                {% if vm.status == 'stopped' %}
+                                <a href="{% url 'vm_action_with_type' node_name=vm.node vmid=vm.vmid vm_type=vm.type action='start' %}" class="btn btn-sm btn-success">
+                                    Iniciar
+                                </a>
+                                {% else %}
+                                <a href="{% url 'vm_action_with_type' node_name=vm.node vmid=vm.vmid vm_type=vm.type action='stop' %}" class="btn btn-sm btn-danger">
+                                    Detener
+                                </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center">No hay máquinas virtuales disponibles</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

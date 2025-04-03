@@ -1,0 +1,352 @@
+{% extends "base.html" %}
+
+{% block title %}VM: {{ vm_status.name }} ({{ vmid }}) - Proxmox Manager{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>{{ vm_status.name }} (ID: {{ vmid }})</h1>
+        <div>
+            <a href="{% url 'node_detail' node_name %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left mr-2"></i> Volver al Nodo
+            </a>
+            <button id="refresh-vm" class="btn btn-primary ml-2">
+                <i class="fas fa-sync-alt mr-1"></i> Actualizar
+            </button>
+        </div>
+    </div>
+    
+    <!-- Acciones rápidas -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h2 class="h5 mb-0">Acciones</h2>
+        </div>
+        <div class="card-body">
+            <div class="btn-group" role="group">
+                {% if vm_status.status == 'stopped' %}
+                <button class="btn btn-success vm-action" data-action="start">
+                    <i class="fas fa-play mr-1"></i> Iniciar
+                </button>
+                {% elif vm_status.status == 'running' %}
+                <button class="btn btn-warning vm-action" data-action="shutdown">
+                    <i class="fas fa-power-off mr-1"></i> Apagar (Shutdown)
+                </button>
+                <button class="btn btn-danger vm-action" data-action="stop">
+                    <i class="fas fa-stop mr-1"></i> Detener (Stop)
+                </button>
+                {% if vm_type == 'qemu' %}
+                <button class="btn btn-info vm-action" data-action="reset">
+                    <i class="fas fa-sync mr-1"></i> Reiniciar (Reset)
+                </button>
+                <button class="btn btn-secondary vm-action" data-action="suspend">
+                    <i class="fas fa-pause mr-1"></i> Suspender
+                </button>
+                {% endif %}
+                {% endif %}
+                
+                {% if vm_status.status == 'suspended' and vm_type == 'qemu' %}
+                <button class="btn btn-primary vm-action" data-action="resume">
+                    <i class="fas fa-play mr-1"></i> Reanudar
+                </button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Estado -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h2 class="h5 mb-0">Estado</h2>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-4">Estado</dt>
+                        <dd class="col-sm-8">
+                            {% if vm_status.status == 'running' %}
+                            <span class="badge bg-success">Ejecutando</span>
+                            {% elif vm_status.status == 'stopped' %}
+                            <span class="badge bg-danger">Detenida</span>
+                            {% elif vm_status.status == 'suspended' %}
+                            <span class="badge bg-warning">Suspendida</span>
+                            {% else %}
+                            <span class="badge bg-secondary">{{ vm_status.status }}</span>
+                            {% endif %}
+                        </dd>
+                        
+                        <dt class="col-sm-4">Uptime</dt>
+                        <dd class="col-sm-8">
+                            {% if vm_status.uptime %}
+                            {{ vm_status.uptime|divmod:86400 }}d {{ vm_status.uptime|divmod:3600 }}h {{ vm_status.uptime|divmod:60 }}m
+                            {% else %}
+                            N/A
+                            {% endif %}
+                        </dd>
+                        
+                        <dt class="col-sm-4">CPU</dt>
+                        <dd class="col-sm-8">
+                            {{ vm_status.cpus }} vCPU
+                            {% if vm_status.cpu %}
+                            <div class="progress mt-1">
+                                <div class="progress-bar bg-primary" role="progressbar" 
+                                     style="width: {{ vm_status.cpu|floatformat:1 }}%;" 
+                                     aria-valuenow="{{ vm_status.cpu|floatformat:1 }}" 
+                                     aria-valuemin="0" aria-valuemax="100">
+                                    {{ vm_status.cpu|floatformat:1 }}%
+                                </div>
+                            </div>
+                            {% endif %}
+                        </dd>
+                        
+                        <dt class="col-sm-4">Memoria</dt>
+                        <dd class="col-sm-8">
+                            {% if vm_status.mem and vm_status.maxmem %}
+                            {{ vm_status.mem|filesizeformat }} / {{ vm_status.maxmem|filesizeformat }}
+                            <div class="progress mt-1">
+                                <div class="progress-bar bg-success" role="progressbar" 
+                                     style="width: {{ vm_status.mem|div:vm_status.maxmem|mul:100|floatformat:1 }}%;" 
+                                     aria-valuenow="{{ vm_status.mem|div:vm_status.maxmem|mul:100|floatformat:1 }}" 
+                                     aria-valuemin="0" aria-valuemax="100">
+                                    {{ vm_status.mem|div:vm_status.maxmem|mul:100|floatformat:1 }}%
+                                </div>
+                            </div>
+                            {% else %}
+                            N/A
+                            {% endif %}
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h2 class="h5 mb-0">Red</h2>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Interfaz</th>
+                                    <th>RX</th>
+                                    <th>TX</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if vm_status.status == 'running' and vm_status.netin %}
+                                {% for key, value in vm_status.netin.items %}
+                                <tr>
+                                    <td>{{ key }}</td>
+                                    <td>{{ value|filesizeformat }}</td>
+                                    <td>{{ vm_status.netout|get_item:key|filesizeformat }}</td>
+                                </tr>
+                                {% endfor %}
+                                {% else %}
+                                <tr>
+                                    <td colspan="3" class="text-center">No hay información de red disponible</td>
+                                </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Configuración -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h2 class="h5 mb-0">Configuración</h2>
+        </div>
+        <div class="card-body">
+            <ul class="nav nav-tabs" id="configTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="general-tab" data-bs-toggle="tab" data-bs-target="#general" type="button" role="tab">
+                        General
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="hardware-tab" data-bs-toggle="tab" data-bs-target="#hardware" type="button" role="tab">
+                        Hardware
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="network-tab" data-bs-toggle="tab" data-bs-target="#network" type="button" role="tab">
+                        Red
+                    </button>
+                </li>
+            </ul>
+            <div class="tab-content p-3" id="configTabsContent">
+                <div class="tab-pane fade show active" id="general" role="tabpanel">
+                    <dl class="row">
+                        {% for key, value in vm_config.items %}
+                            {% if key != 'digest' and key != 'smbios1' and not key|startswith:'net' and not key|startswith:'ide' and not key|startswith:'scsi' and not key|startswith:'sata' %}
+                            <dt class="col-sm-3">{{ key }}</dt>
+                            <dd class="col-sm-9">{{ value }}</dd>
+                            {% endif %}
+                        {% endfor %}
+                    </dl>
+                </div>
+                <div class="tab-pane fade" id="hardware" role="tabpanel">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Tipo</th>
+                                    <th>ID</th>
+                                    <th>Detalles</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for key, value in vm_config.items %}
+                                    {% if key|startswith:'ide' or key|startswith:'scsi' or key|startswith:'sata' %}
+                                    <tr>
+                                        <td>{{ key|slice:":4" }}</td>
+                                        <td>{{ key|slice:"4:" }}</td>
+                                        <td>{{ value }}</td>
+                                    </tr>
+                                    {% endif %}
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="tab-pane fade" id="network" role="tabpanel">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Configuración</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for key, value in vm_config.items %}
+                                    {% if key|startswith:'net' %}
+                                    <tr>
+                                        <td>{{ key|slice:"3:" }}</td>
+                                        <td>{{ value }}</td>
+                                    </tr>
+                                    {% endif %}
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Historial de tareas -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="h5 mb-0">Historial de Tareas</h2>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Tipo</th>
+                            <th>Estado</th>
+                            <th>Inicio</th>
+                            <th>Duración</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for task in tasks %}
+                        <tr>
+                            <td>{{ task.upid }}</td>
+                            <td>{{ task.type }}</td>
+                            <td>
+                                {% if task.status == 'OK' %}
+                                <span class="badge bg-success">OK</span>
+                                {% elif task.status == 'running' %}
+                                <span class="badge bg-info">Ejecutando</span>
+                                {% elif task.status == 'stopped' %}
+                                <span class="badge bg-warning">Detenida</span>
+                                {% else %}
+                                <span class="badge bg-danger">{{ task.status }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ task.starttime|timestamp_to_datetime }}</td>
+                            <td>
+                                {% if task.endtime and task.starttime %}
+                                {{ task.endtime|sub:task.starttime }} segundos
+                                {% else %}
+                                N/A
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center">No hay tareas registradas</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    // Actualizar información de VM
+    document.getElementById('refresh-vm').addEventListener('click', function() {
+        location.reload();
+    });
+    
+    // Manejar acciones de VM
+    document.querySelectorAll('.vm-action').forEach(button => {
+        button.addEventListener('click', function() {
+            const action = this.dataset.action;
+            if (confirm(`¿Estás seguro de que deseas realizar la acción "${action}"?`)) {
+                fetch(`{% url 'vm_action_with_type' node_name vmid vm_type 'ACTION' %}`.replace('ACTION', action), {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(`Acción "${action}" iniciada correctamente. Actualizando...`);
+                        setTimeout(() => {
+                            location.reload();
+                        }, 2000);
+                    } else {
+                        alert(`Error: ${data.message}`);
+                    }
+                })
+                .catch(error => {
+                    alert(`Error: ${error}`);
+                });
+            }
+        });
+    });
+    
+    // Actualización periódica para VMs en ejecución
+    {% if vm_status.status == 'running' %}
+    function updateVMStatus() {
+        fetch(`{% url 'api_vm_status' node_name vmid %}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Actualizar información de CPU y memoria
+                    // (Implementar según necesidad)
+                }
+            })
+            .catch(error => console.error('Error:', error));
+    }
+    
+    // Actualizar cada 5 segundos
+    const statusInterval = setInterval(updateVMStatus, 5000);
+    {% endif %}
+</script>
+{% endblock %}
+{% endblock %}

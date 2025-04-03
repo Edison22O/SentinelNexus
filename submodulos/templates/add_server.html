@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}Añadir Servidor Proxmox{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="mb-3">
+        <a href="{% url 'server_list' %}" class="btn btn-secondary">← Volver a la lista</a>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h1>Añadir Servidor Proxmox</h1>
+        </div>
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                
+                <div class="mb-3">
+                    <label for="name" class="form-label">Nombre</label>
+                    <input type="text" class="form-control" id="name" name="name" required>
+                    <div class="form-text">Un nombre descriptivo para identificar este servidor.</div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="hostname" class="form-label">Hostname / IP</label>
+                    <input type="text" class="form-control" id="hostname" name="hostname" required>
+                    <div class="form-text">La dirección IP o nombre de host del servidor Proxmox.</div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="port" class="form-label">Puerto</label>
+                    <input type="number" class="form-control" id="port" name="port" value="8006">
+                    <div class="form-text">El puerto para la API de Proxmox (por defecto: 8006).</div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="username" class="form-label">Nombre de Usuario</label>
+                    <input type="text" class="form-control" id="username" name="username" placeholder="root@pam" required>
+                    <div class="form-text">Formato: usuario@realm (ejemplo: root@pam).</div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="password" class="form-label">Contraseña</label>
+                    <input type="password" class="form-control" id="password" name="password" required>
+                </div>
+                
+                <div class="mb-3 form-check">
+                    <input type="checkbox" class="form-check-input" id="verify_ssl" name="verify_ssl">
+                    <label class="form-check-label" for="verify_ssl">Verificar SSL</label>
+                    <div class="form-text">Marcar si el servidor tiene un certificado SSL válido.</div>
+                </div>
+                
+                <button type="submit" class="btn btn-primary">Guardar Servidor</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

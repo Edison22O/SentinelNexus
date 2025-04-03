@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block title %}{{ server.name }} - Detalles{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="mb-3">
+        <a href="{% url 'server_list' %}" class="btn btn-secondary">← Volver a la lista</a>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h1>{{ server.name }}</h1>
+            <a href="?refresh=1" class="btn btn-primary">Actualizar VMs</a>
+        </div>
+        <div class="card-body">
+            <h5>Información del Servidor</h5>
+            <dl class="row">
+                <dt class="col-sm-3">Hostname</dt>
+                <dd class="col-sm-9">{{ server.hostname }}</dd>
+                
+                <dt class="col-sm-3">Puerto</dt>
+                <dd class="col-sm-9">{{ server.port }}</dd>
+                
+                <dt class="col-sm-3">Usuario</dt>
+                <dd class="col-sm-9">{{ server.username }}</dd>
+                
+                <dt class="col-sm-3">Verificar SSL</dt>
+                <dd class="col-sm-9">{% if server.verify_ssl %}Sí{% else %}No{% endif %}</dd>
+            </dl>
+        </div>
+    </div>
+    
+    <h2>Máquinas Virtuales</h2>
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nombre</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for vm in vms %}
+                <tr>
+                    <td>{{ vm.vmid }}</td>
+                    <td>{{ vm.name }}</td>
+                    <td>
+                        {% if vm.status == 'running' %}
+                        <span class="badge bg-success">Ejecutando</span>
+                        {% elif vm.status == 'stopped' %}
+                        <span class="badge bg-danger">Detenida</span>
+                        {% else %}
+                        <span class="badge bg-secondary">{{ vm.status }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{% url 'vm_detail' server.id vm.vmid %}" class="btn btn-sm btn-info">Detalles</a>
+                        {% if vm.status == 'stopped' %}
+                        <a href="{% url 'vm_action' server.id vm.vmid 'start' %}" class="btn btn-sm btn-success">Iniciar</a>
+                        {% elif vm.status == 'running' %}
+                        <a href="{% url 'vm_action' server.id vm.vmid 'stop' %}" class="btn btn-sm btn-danger">Detener</a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" class="text-center">No hay máquinas virtuales disponibles</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
