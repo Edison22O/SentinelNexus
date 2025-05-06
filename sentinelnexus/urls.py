@@ -15,6 +15,11 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
+from django.contrib import admin
+from django.views.generic.base import RedirectView, TemplateView
+from django.urls import path, re_path, include
+from django.contrib.auth.views import LoginView, LogoutView
+from submodulos import views  # Importar vistas desde la aplicación submodulos
 
 urlpatterns = [
     path('admin/', admin.site.urls),
